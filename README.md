@@ -8,7 +8,7 @@ A standalone desktop wallpaper player that turns any video into a dynamic backgr
 
 ### 下载 | Download
 
-- **Windows x64**: 请到 [Releases](https://github.com/HZXIOI/trae-wallpaper-player/releases) 页面下载最新版本
+- **Windows x64**: [FlowPaper-v1.1.0-windows-x64.zip](https://github.com/HZXIOI/trae-wallpaper-player/releases/download/v1.1.0/FlowPaper-v1.1.0-windows-x64.zip) (137 MB)
 
 ---
 
