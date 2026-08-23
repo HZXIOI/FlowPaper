@@ -8,7 +8,7 @@ A standalone desktop wallpaper player that turns any video into a dynamic backgr
 
 ### 下载 | Download
 
-- **Windows x64**: [Trae-Wallpaper-Player-v1.0.0-windows-x64.zip](https://github.com/HZXIOI/trae-wallpaper-player/releases/download/v1.0.0/Trae-Wallpaper-Player-v1.0.0-windows-x64.zip) (106 MB)
+- **Windows x64**: 请到 [Releases](https://github.com/HZXIOI/trae-wallpaper-player/releases) 页面下载最新版本
 
 ---
 
