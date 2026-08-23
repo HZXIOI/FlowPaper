@@ -1,10 +1,10 @@
-# Trae Wallpaper Player
+# FlowPaper
 
 **中文** | [English](#english)
 
-为 **Trae IDE** 设计的桌面壁纸播放器，让你的代码编辑器拥有动态视频背景。
+一款独立的桌面壁纸播放器，让你把任意视频设为应用的动态背景。
 
-A desktop wallpaper player designed for **Trae IDE**, bringing dynamic video backgrounds to your code editor.
+A standalone desktop wallpaper player that turns any video into a dynamic background for your apps.
 
 ### 下载 | Download
 
@@ -16,36 +16,37 @@ A desktop wallpaper player designed for **Trae IDE**, bringing dynamic video bac
 
 ### 这是什么？
 
-Trae Wallpaper Player 是一个独立的桌面应用，让你把任意视频设为 Trae IDE 的背景。不用改代码、不用装插件，打开播放器、导入视频、一键应用即可。
+FlowPaper 是一个独立的桌面应用，让你把任意视频设为目标应用的背景。不用改代码、不用装插件，打开播放器、导入视频、一键应用即可。
 
 ### 功能
 
 - 导入本地视频（MP4 / WebM / MOV / MKV / AVI）
+- 自动截取视频帧作为封面缩略图
 - 实时预览视频效果
-- 一键应用到 Trae 背景
+- 一键应用背景
 - 透明度自由调节（5% ~ 60%）
-- 无需重启即可实时切换壁纸（首次需重启 Trae）
-- 恢复 Trae 默认界面
+- 无需重启即可实时切换壁纸（首次需重启目标应用）
+- 恢复目标应用默认界面
 - 壁纸库文件夹管理，支持多视频
 - 拖拽导入
 
 ### 使用方法
 
-1. 下载并打开 Trae Wallpaper Player
+1. 下载并打开 FlowPaper
 2. 点击「导入视频」或把视频文件拖入窗口
 3. 在左侧视频库中选择要使用的视频
 4. 调整「背景透明度」滑块
-5. 点击「应用到 Trae」
-6. **首次使用需重启 Trae**，之后切换壁纸无需重启
-7. 点击「恢复默认」可随时还原 Trae 原始界面
+5. 点击「应用」
+6. **首次使用需重启目标应用**，之后切换壁纸无需重启
+7. 点击「恢复默认」可随时还原目标应用的原始界面
 
 ### 技术原理
 
-播放器启动时会运行一个本地 HTTP 服务器（端口 9876），用于提供视频流。点击「应用到 Trae」时，播放器会修改 Trae 安装目录下的 `solo-lite.html` 文件，注入一个全屏 `<video>` 标签和 WebSocket 脚本。
+播放器启动时会运行一个本地 HTTP 服务器（端口 9876），用于提供视频流。点击「应用」时，播放器会修改目标应用安装目录下的入口 HTML 文件，注入一个全屏 `<video>` 标签和 WebSocket 脚本。
 
-- **首次应用**：注入 HTML + CSS，需要重启 Trae 加载
-- **后续切换**：通过 WebSocket 通知 Trae 刷新视频源，实时切换
-- **恢复默认**：从备份还原 `solo-lite.html`，删除注入的 CSS
+- **首次应用**：注入 HTML + CSS，需要重启目标应用加载
+- **后续切换**：通过 WebSocket 通知目标应用刷新视频源，实时切换
+- **恢复默认**：从备份还原入口 HTML，删除注入的 CSS
 
 ### 开发
 
@@ -81,36 +82,37 @@ npm run build:installer
 
 ### What is this?
 
-Trae Wallpaper Player is a standalone desktop application that lets you set any video as the background of Trae IDE. No code changes, no plugins — just open the player, import a video, and apply with one click.
+FlowPaper is a standalone desktop application that lets you set any video as the background of a target app. No code changes, no plugins — just open the player, import a video, and apply with one click.
 
 ### Features
 
 - Import local videos (MP4 / WebM / MOV / MKV / AVI)
+- Auto-capture video frames as thumbnail covers
 - Real-time video preview
-- One-click apply to Trae background
+- One-click apply background
 - Adjustable opacity (5% ~ 60%)
-- Instant wallpaper switching without restarting Trae (first use requires restart)
-- Restore Trae default interface
+- Instant wallpaper switching without restarting the target app (first use requires restart)
+- Restore the target app's default interface
 - Wallpaper library folder management with multi-video support
 - Drag-and-drop import
 
 ### Usage
 
-1. Download and open Trae Wallpaper Player
+1. Download and open FlowPaper
 2. Click "Import Video" or drag video files into the window
 3. Select a video from the library on the left
 4. Adjust the "Background Opacity" slider
-5. Click "Apply to Trae"
-6. **Restart Trae on first use** — after that, switching wallpapers requires no restart
-7. Click "Restore Default" to revert Trae to its original interface at any time
+5. Click "Apply"
+6. **Restart the target app on first use** — after that, switching wallpapers requires no restart
+7. Click "Restore Default" to revert the target app to its original interface at any time
 
 ### How It Works
 
-The player runs a local HTTP server (port 9876) to serve video streams. When you click "Apply to Trae", the player modifies Trae's `solo-lite.html` entry file, injecting a fullscreen `<video>` tag and a WebSocket script.
+The player runs a local HTTP server (port 9876) to serve video streams. When you click "Apply", the player modifies the target app's entry HTML file, injecting a fullscreen `<video>` tag and a WebSocket script.
 
-- **First apply**: Injects HTML + CSS, requires Trae restart to load
-- **Subsequent switches**: WebSocket notifies Trae to refresh the video source instantly
-- **Restore default**: Restores `solo-lite.html` from backup and removes injected CSS
+- **First apply**: Injects HTML + CSS, requires a target app restart to load
+- **Subsequent switches**: WebSocket notifies the target app to refresh the video source instantly
+- **Restore default**: Restores the entry HTML from backup and removes injected CSS
 
 ### Development
 

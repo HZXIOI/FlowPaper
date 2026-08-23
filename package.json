@@ -1,7 +1,7 @@
 {
-  "name": "trae-wallpaper-player",
-  "version": "1.0.0",
-  "description": "A desktop wallpaper player for Trae IDE",
+  "name": "flowpaper",
+  "version": "1.1.0",
+  "description": "FlowPaper - a desktop wallpaper player",
   "main": "dist-electron/main/main.js",
   "author": "",
   "license": "MIT",
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:installer": "tsc && vite build && electron-builder",
+    "build:installer": "tsc && vite build && electron-builder && powershell -NoProfile -ExecutionPolicy Bypass -File postbuild.ps1",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },

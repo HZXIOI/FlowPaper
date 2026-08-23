@@ -1,9 +1,10 @@
-appId: com.trae.wallpaper.player
-productName: Trae Wallpaper Player
+appId: com.flowpaper.app
+productName: FlowPaper
 copyright: Copyright © 2026
 directories:
-  output: dist-release4
+  output: dist-release7
   buildResources: build
+electronDist: node_modules/electron/dist
 files:
   - dist
   - dist-electron
@@ -13,11 +14,11 @@ extraResources:
     filter:
       - "**/*"
 win:
+  icon: build/icon.ico
   target:
     - target: dir
       arch:
         - x64
-  icon: build/icon.ico
   verifyUpdateCodeSignature: false
   signAndEditExecutable: false
   requestedExecutionLevel: requireAdministrator
@@ -25,8 +26,6 @@ forceCodeSigning: false
 mac:
   target:
     - dmg
-  icon: build/icon.icns
 linux:
   target:
     - AppImage
-  icon: build/icon.png

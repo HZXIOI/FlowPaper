@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+# ffmpeg.exe is too large (>100MB) for GitHub; it is bundled via extraResources at build time
+assets/ffmpeg/
 dist
 dist-ssr
 dist-electron
@@ -15,6 +17,9 @@ dist-release
 dist-release2
 dist-release3
 dist-release4
+dist-release5
+dist-release6
+dist-release7
 release
 *.local
 

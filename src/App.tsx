@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Film,
   Upload,
-  ExternalLink
+  ExternalLink,
+  RefreshCw
 } from 'lucide-react'
 
 interface VideoItem {
@@ -18,6 +19,7 @@ interface VideoItem {
   path: string
   size: number
   modified: number
+  thumbnail: string
 }
 
 function App() {
@@ -76,10 +78,21 @@ function App() {
 
   const loadVideosFromFolder = async (folder: string) => {
     if (!folder || !window.electronAPI) return
-    const items = await window.electronAPI.getVideosFromFolder(folder)
+    let items = await window.electronAPI.getVideosFromFolder(folder)
+    // 发现缺失封面的视频时，批量生成封面后刷新
+    if (items.some(v => !v.thumbnail)) {
+      items = await window.electronAPI.generateThumbnails(folder)
+    }
     setVideos(items)
-    if (items.length > 0 && !selectedVideo) {
+    if (selectedVideo) {
+      const stillExists = items.some(v => v.path === selectedVideo.path)
+      if (!stillExists) {
+        setSelectedVideo(items[0] ?? null)
+      }
+    } else if (items.length > 0) {
       setSelectedVideo(items[0])
+    } else {
+      setSelectedVideo(null)
     }
   }
 
@@ -96,6 +109,12 @@ function App() {
   const handleOpenFolder = async () => {
     if (!wallpaperFolder || !window.electronAPI) return
     await window.electronAPI.openFolder(wallpaperFolder)
+  }
+
+  const handleRefresh = async () => {
+    if (!wallpaperFolder) return
+    await loadVideosFromFolder(wallpaperFolder)
+    showStatus('视频库已刷新', 'success')
   }
 
   const handleSelectVideo = async () => {
@@ -196,6 +215,11 @@ function App() {
     return `file:///${encodeURI(normalized)}`
   }
 
+  const getThumbnailSrc = (video: VideoItem) => {
+    const normalized = video.thumbnail.replace(/\\/g, '/')
+    return `file:///${encodeURI(normalized)}`
+  }
+
   return (
     <div
       className="app"
@@ -212,6 +236,9 @@ function App() {
               <div className="panel-subtitle">{videos.length} 个视频</div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-secondary" style={{ flex: 'none', padding: '8px' }} onClick={handleRefresh} title="刷新列表">
+                <RefreshCw size={16} />
+              </button>
               <button className="btn btn-secondary" style={{ flex: 'none', padding: '8px' }} onClick={handleOpenFolder} title="打开文件夹">
                 <ExternalLink size={16} />
               </button>
@@ -235,7 +262,11 @@ function App() {
                   onClick={() => setSelectedVideo(video)}
                 >
                   <div className="video-thumbnail">
-                    <FileVideo />
+                    {video.thumbnail ? (
+                      <img src={getThumbnailSrc(video)} alt={video.name} draggable={false} />
+                    ) : (
+                      <FileVideo />
+                    )}
                   </div>
                   <div className="video-info">
                     <div className="video-name">{video.name}</div>
