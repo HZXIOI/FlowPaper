@@ -6,7 +6,6 @@ export interface ElectronAPI {
   getDefaultFolder: () => Promise<string>
   ensureFolder: (folderPath: string) => Promise<{ success: boolean; folderPath?: string; message?: string }>
   getVideosFromFolder: (folderPath: string) => Promise<VideoItem[]>
-  generateThumbnails: (folderPath: string) => Promise<VideoItem[]>
   importVideo: (options: { sourcePath: string; folderPath?: string }) => Promise<{ success: boolean; item?: VideoItem; message?: string }>
   applyWallpaper: (options: ApplyOptions) => Promise<{ success: boolean; message: string }>
   restoreDefault: () => Promise<{ success: boolean; message: string }>
@@ -19,7 +18,6 @@ export interface VideoItem {
   path: string
   size: number
   modified: number
-  thumbnail: string
 }
 
 export interface ApplyOptions {
@@ -40,7 +38,6 @@ const api: ElectronAPI = {
   getDefaultFolder: () => ipcRenderer.invoke('get-default-folder'),
   ensureFolder: (folderPath: string) => ipcRenderer.invoke('ensure-folder', folderPath),
   getVideosFromFolder: (folderPath: string) => ipcRenderer.invoke('get-videos-from-folder', folderPath),
-  generateThumbnails: (folderPath: string) => ipcRenderer.invoke('generate-thumbnails', folderPath),
   importVideo: (options: { sourcePath: string; folderPath?: string }) => ipcRenderer.invoke('import-video', options),
   applyWallpaper: (options: ApplyOptions) => ipcRenderer.invoke('apply-wallpaper', options),
   restoreDefault: () => ipcRenderer.invoke('restore-default'),
