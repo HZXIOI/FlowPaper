@@ -23,8 +23,8 @@ foreach ($exe in $exes) {
         --set-version-string 'FileDescription' 'FlowPaper' `
         --set-version-string 'CompanyName' 'FlowPaper' `
         --set-version-string 'LegalCopyright' 'Copyright (C) 2026' `
-        --set-file-version '1.1.0.0' `
-        --set-product-version '1.1.0.0'
+        --set-file-version '1.1.1.0' `
+        --set-product-version '1.1.1.0'
 
     if ($LASTEXITCODE -ne 0) { Write-Error "rcedit failed: $($exe.FullName)"; exit 1 }
     Write-Output "Icon embedded: $($exe.FullName)"
