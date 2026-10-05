@@ -12,9 +12,11 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
 
-const DEFAULT_TRAE_PATH = 'D:\\TRAE Word'
 const SERVER_PORT = 9876
 const SERVER_HOST = '127.0.0.1'
+
+// Trae 入口文件（solo-lite.html）相对安装根目录的路径
+const SOLO_LITE_RELATIVE = ['resources', 'app', 'out', 'vs', 'code', 'electron-browser', 'solo', 'solo-lite.html']
 
 // Local server state
 let currentVideoPath = ''
@@ -24,6 +26,193 @@ let clients = new Set<WebSocket>()
 
 const MARKER_START = '<!-- TRAE-WALLPAPER-PLAYER-START -->'
 const MARKER_END = '<!-- TRAE-WALLPAPER-PLAYER-END -->'
+
+// ============================================================
+// Trae 安装路径自动查找
+// 优先级：上次手动选择的配置 → 注册表 InstallLocation → 常见安装目录 → 手动选择
+// ============================================================
+
+interface FlowPaperConfig {
+  traeRoot?: string
+}
+
+// 查找成功后缓存，避免每次应用壁纸都重复扫描
+let cachedTraeRoot: string | null = null
+
+function getConfigPath(): string {
+  return path.join(app.getPath('userData'), 'config.json')
+}
+
+function loadConfig(): FlowPaperConfig {
+  try {
+    const configPath = getConfigPath()
+    if (!fs.existsSync(configPath)) return {}
+    const parsed = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch (err) {
+    console.error('读取配置文件失败:', err)
+    return {}
+  }
+}
+
+function saveConfig(config: FlowPaperConfig) {
+  try {
+    fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8')
+  } catch (err) {
+    console.error('写入配置文件失败:', err)
+  }
+}
+
+function saveTraeRoot(root: string) {
+  const config = loadConfig()
+  config.traeRoot = root
+  saveConfig(config)
+}
+
+// 拼接 Trae 入口文件（solo-lite.html）的完整路径
+function getSoloLitePath(traeRoot: string): string {
+  return path.join(traeRoot, ...SOLO_LITE_RELATIVE)
+}
+
+// 校验目录是否为有效的 Trae 安装根目录（存在 solo-lite.html）
+function isValidTraeRoot(root: string | undefined | null): root is string {
+  if (!root) return false
+  try {
+    return fs.existsSync(getSoloLitePath(root))
+  } catch {
+    return false
+  }
+}
+
+// 常见安装目录候选列表
+function getCommonTraeRoots(): string[] {
+  const candidates: string[] = []
+  const add = (base: string | undefined, ...segments: string[]) => {
+    if (base) candidates.push(path.join(base, ...segments))
+  }
+  add(process.env.LOCALAPPDATA, 'Programs', 'Trae')
+  add(process.env.LOCALAPPDATA, 'Programs', 'Trae CN')
+  add(process.env.ProgramFiles, 'TraeIDE')
+  add(process.env.ProgramFiles, 'Trae CN')
+  add(process.env['ProgramFiles(x86)'], 'Trae')
+  add(process.env['ProgramFiles(x86)'], 'Trae CN')
+  // 用户原有的自定义安装路径
+  candidates.push('D:\\TRAE Word')
+  return candidates
+}
+
+// 读取某一注册表卸载项根键下的所有条目
+function queryUninstallEntries(root: string): Array<{ displayName: string; installLocation: string }> {
+  const entries: Array<{ displayName: string; installLocation: string }> = []
+  const result = spawnSync('reg', ['query', root, '/s'], { encoding: 'utf-8', windowsHide: true, timeout: 10000 })
+  if (result.status !== 0 || !result.stdout) return entries
+
+  let current: { displayName: string; installLocation: string } | null = null
+  for (const rawLine of result.stdout.split(/\r?\n/)) {
+    const line = rawLine.trim()
+    if (!line) continue
+    // 子键行（以 HKEY_ 开头）标志着一个新条目开始
+    if (/^HKEY_/i.test(line)) {
+      if (current) entries.push(current)
+      current = { displayName: '', installLocation: '' }
+      continue
+    }
+    if (!current) continue
+    const match = line.match(/^(DisplayName|InstallLocation)\s+REG_SZ\s+(.+)$/i)
+    if (!match) continue
+    if (/^DisplayName$/i.test(match[1])) current.displayName = match[2].trim()
+    else current.installLocation = match[2].trim()
+  }
+  if (current) entries.push(current)
+  return entries
+}
+
+// 从注册表卸载信息中查找 Trae 的 InstallLocation
+function findTraeRootFromRegistry(): string | null {
+  if (process.platform !== 'win32') return null
+  const uninstallRoots = [
+    'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'
+  ]
+  for (const root of uninstallRoots) {
+    try {
+      for (const entry of queryUninstallEntries(root)) {
+        if (!/trae/i.test(entry.displayName)) continue
+        if (isValidTraeRoot(entry.installLocation)) return entry.installLocation
+      }
+    } catch (err) {
+      // 注册表项可能因权限不足无法访问，忽略并继续尝试其它来源
+      console.error(`查询注册表 ${root} 失败:`, err)
+    }
+  }
+  return null
+}
+
+// 自动查找 Trae 安装根目录（不含手动选择）
+async function resolveTraeRoot(): Promise<string | null> {
+  if (isValidTraeRoot(cachedTraeRoot)) return cachedTraeRoot
+
+  // a. 上次手动选择并持久化的路径
+  const configured = loadConfig().traeRoot
+  if (isValidTraeRoot(configured)) {
+    cachedTraeRoot = configured
+    return configured
+  }
+
+  // b. 注册表卸载信息中的 InstallLocation
+  const fromRegistry = findTraeRootFromRegistry()
+  if (isValidTraeRoot(fromRegistry)) {
+    cachedTraeRoot = fromRegistry
+    saveTraeRoot(fromRegistry)
+    return fromRegistry
+  }
+
+  // c. 常见安装目录
+  for (const candidate of getCommonTraeRoots()) {
+    if (isValidTraeRoot(candidate)) {
+      cachedTraeRoot = candidate
+      saveTraeRoot(candidate)
+      return candidate
+    }
+  }
+
+  return null
+}
+
+// 自动查找失败时，弹出目录选择对话框让用户手动指定 Trae 安装根目录
+async function promptForTraeRoot(): Promise<string | null> {
+  const openOptions: Electron.OpenDialogOptions = {
+    properties: ['openDirectory'],
+    title: '请选择 Trae 安装根目录（包含 resources 文件夹）'
+  }
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, openOptions)
+    : await dialog.showOpenDialog(openOptions)
+  if (result.canceled || result.filePaths.length === 0) return null
+
+  const selected = result.filePaths[0]
+  if (!isValidTraeRoot(selected)) {
+    const messageOptions: Electron.MessageBoxOptions = {
+      type: 'error',
+      title: '路径无效',
+      message: '所选目录下未找到 solo-lite.html',
+      detail: `请确认选择的是 Trae 安装根目录：\n${getSoloLitePath(selected)}`
+    }
+    if (mainWindow) await dialog.showMessageBox(mainWindow, messageOptions)
+    else await dialog.showMessageBox(messageOptions)
+    return null
+  }
+
+  cachedTraeRoot = selected
+  saveTraeRoot(selected)
+  return selected
+}
+
+// 统一入口：先自动查找，全部失败则弹窗手动选择
+async function ensureTraeRoot(): Promise<string | null> {
+  return (await resolveTraeRoot()) ?? (await promptForTraeRoot())
+}
 
 function createWindow(silent = false) {
   mainWindow = new BrowserWindow({
@@ -134,7 +323,7 @@ function startLocalServer() {
     if (url === '/api/apply' && req.method === 'POST') {
       try {
         const body = JSON.parse((await readBody(req)).toString('utf-8'))
-        const result = applyWallpaperCore(body.videoPath, body.opacity)
+        const result = await applyWallpaperCore(body.videoPath, body.opacity)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
       } catch (err) {
@@ -146,7 +335,7 @@ function startLocalServer() {
 
     if (url === '/api/restore' && req.method === 'POST') {
       try {
-        const result = restoreCore()
+        const result = await restoreCore()
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify(result))
       } catch (err) {
@@ -663,11 +852,15 @@ function uploadVideoCore(buf: Buffer, name: string) {
   }
 }
 
-function applyWallpaperCore(videoPath: string, opacity: number, traPath?: string) {
+async function applyWallpaperCore(videoPath: string, opacity: number, traPath?: string) {
   try {
-    const targetPath = traPath || DEFAULT_TRAE_PATH
-    const resourcesPath = path.join(targetPath, 'resources', 'app', 'out', 'vs')
-    const soloLitePath = path.join(resourcesPath, 'code', 'electron-browser', 'solo', 'solo-lite.html')
+    // 优先使用调用方传入的路径，否则动态查找 Trae 安装根目录
+    const traeRoot = isValidTraeRoot(traPath) ? traPath : await ensureTraeRoot()
+    if (!traeRoot) {
+      return { success: false, message: '未找到 Trae 安装目录，请手动选择后重试' }
+    }
+    const resourcesPath = path.join(traeRoot, 'resources', 'app', 'out', 'vs')
+    const soloLitePath = getSoloLitePath(traeRoot)
     const mediaPath = path.join(resourcesPath, 'workbench', 'browser', 'media')
     const cssPath = path.join(mediaPath, 'trae-skin.css')
 
@@ -720,11 +913,15 @@ function applyWallpaperCore(videoPath: string, opacity: number, traPath?: string
   }
 }
 
-function restoreCore(traPath?: string) {
+async function restoreCore(traPath?: string) {
   try {
-    const targetPath = traPath || DEFAULT_TRAE_PATH
-    const soloLitePath = path.join(targetPath, 'resources', 'app', 'out', 'vs', 'code', 'electron-browser', 'solo', 'solo-lite.html')
-    const cssPath = path.join(targetPath, 'resources', 'app', 'out', 'vs', 'workbench', 'browser', 'media', 'trae-skin.css')
+    // 优先使用调用方传入的路径，否则动态查找 Trae 安装根目录
+    const traeRoot = isValidTraeRoot(traPath) ? traPath : await ensureTraeRoot()
+    if (!traeRoot) {
+      return { success: false, message: '未找到 Trae 安装目录，请手动选择后重试' }
+    }
+    const soloLitePath = getSoloLitePath(traeRoot)
+    const cssPath = path.join(traeRoot, 'resources', 'app', 'out', 'vs', 'workbench', 'browser', 'media', 'trae-skin.css')
 
     const cleanContent = getCleanOriginalContent(soloLitePath)
     fs.writeFileSync(soloLitePath, cleanContent, 'utf-8')
