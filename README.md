@@ -8,7 +8,7 @@ A standalone desktop wallpaper player that turns any video into a dynamic backgr
 
 ### 下载 | Download
 
-- **Windows x64**: [FlowPaper-v1.1.1-windows-x64.zip](https://github.com/HZXIOI/FlowPaper/releases/download/v1.1.1/FlowPaper-v1.1.1-windows-x64.zip) (106 MB)
+- **Windows x64**: [FlowPaper-v1.1.2-windows-x64.zip](https://github.com/HZXIOI/FlowPaper/releases/download/v1.1.2/FlowPaper-v1.1.2-windows-x64.zip) (106 MB)
 
 ---
 
@@ -21,7 +21,7 @@ FlowPaper 是一个独立的桌面应用，让你把任意视频设为目标应�
 ### 功能
 
 - 导入本地视频（MP4 / WebM / MOV / MKV / AVI）
-- 自动截取视频帧作为封面缩略图
+- 视频库中直接显示视频画面作为缩略图
 - 实时预览视频效果
 - 一键应用背景
 - 透明度自由调节（5% ~ 60%）
@@ -87,7 +87,7 @@ FlowPaper is a standalone desktop application that lets you set any video as the
 ### Features
 
 - Import local videos (MP4 / WebM / MOV / MKV / AVI)
-- Auto-capture video frames as thumbnail covers
+- Video frames shown directly as thumbnails in the library
 - Real-time video preview
 - One-click apply background
 - Adjustable opacity (5% ~ 60%)
