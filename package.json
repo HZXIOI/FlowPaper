@@ -1,6 +1,6 @@
 {
   "name": "flowpaper",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "FlowPaper - a desktop wallpaper player",
   "main": "dist-electron/main/main.js",
   "author": "",
