@@ -8,7 +8,7 @@ A standalone desktop wallpaper player that turns any video into a dynamic backgr
 
 ### 下载 | Download
 
-- **Windows x64**: [FlowPaper-v1.1.0-windows-x64.zip](https://github.com/HZXIOI/FlowPaper/releases/download/v1.1.0/FlowPaper-v1.1.0-windows-x64.zip) (137 MB)
+- **Windows x64**: [FlowPaper-v1.1.1-windows-x64.zip](https://github.com/HZXIOI/FlowPaper/releases/download/v1.1.1/FlowPaper-v1.1.1-windows-x64.zip) (106 MB)
 
 ---
 
@@ -74,7 +74,7 @@ npm run build:installer
 
 **注意：目前仅 Trae 已完成适配，其他软件需要单独适配入口文件路径。** 欢迎社区贡献适配方案。
 
-只需修改 `src/electron/main.ts` 中的 `DEFAULT_TRAE_PATH` 和目标 HTML 文件路径即可适配其他应用。
+只需修改 `src/electron/main.ts` 中的 `SOLO_LITE_RELATIVE`（入口文件相对路径）和 `getCommonTraeRoots()`（安装目录候选列表）即可适配其他应用。Trae 的安装根目录会在启动时自动查找（配置 → 注册表 → 常见目录），查找失败时可手动选择。
 
 ---
 
@@ -140,7 +140,7 @@ The core principle is injecting video backgrounds by modifying the entry HTML fi
 
 **Note: Currently only Trae has been adapted. Other software requires individual adaptation of entry file paths.** Community contributions for adaptations are welcome.
 
-To adapt for other apps, simply modify `DEFAULT_TRAE_PATH` and the target HTML file path in `src/electron/main.ts`.
+To adapt for other apps, simply modify `SOLO_LITE_RELATIVE` (the entry-file relative path) and `getCommonTraeRoots()` (the install-directory candidate list) in `src/electron/main.ts`. The Trae install root is auto-detected at runtime (config → registry → common directories), with a manual folder picker as fallback.
 
 ---
 
