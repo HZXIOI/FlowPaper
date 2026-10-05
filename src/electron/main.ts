@@ -570,17 +570,6 @@ ipcMain.handle('get-videos-from-folder', async (_event, folderPath: string) => {
   return listVideosCore(folderPath)
 })
 
-ipcMain.handle('generate-thumbnails', async (_event, folderPath: string) => {
-  // 为壁纸库里缺失封面的视频批量生成封面，返回更新后的列表
-  const items = listVideosCore(folderPath)
-  for (const item of items) {
-    if (!item.thumbnail) {
-      generateThumbnail(item.path)
-    }
-  }
-  return listVideosCore(folderPath)
-})
-
 ipcMain.handle('import-video', async (_event, options: { sourcePath: string; folderPath?: string }) => {
   try {
     const { sourcePath } = options
@@ -607,15 +596,13 @@ ipcMain.handle('import-video', async (_event, options: { sourcePath: string; fol
 
     fs.copyFileSync(sourcePath, destPath)
     const stat = fs.statSync(destPath)
-    const thumbnail = generateThumbnail(destPath)
     return {
       success: true,
       item: {
         name: destName,
         path: destPath,
         size: stat.size,
-        modified: stat.mtimeMs,
-        thumbnail
+        modified: stat.mtimeMs
       }
     }
   } catch (err) {
@@ -764,40 +751,6 @@ function readBody(req: http.IncomingMessage): Promise<Buffer> {
   })
 }
 
-function getFfmpegPath(): string {
-  // 优先使用打包后内置的 ffmpeg，开发时回退到项目 assets 目录
-  const bundled = path.join(process.resourcesPath, 'assets', 'ffmpeg', 'ffmpeg.exe')
-  if (fs.existsSync(bundled)) return bundled
-  const local = path.join(__dirname, '../../assets/ffmpeg/ffmpeg.exe')
-  if (fs.existsSync(local)) return local
-  return ''
-}
-
-function generateThumbnail(videoPath: string): string {
-  try {
-    const ffmpeg = getFfmpegPath()
-    if (!ffmpeg || !fs.existsSync(videoPath)) return ''
-
-    const outputPath = videoPath + '.jpg'
-    // 已有封面直接复用，避免重复截帧
-    if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0) return outputPath
-
-    const args = ['-y', '-ss', '1', '-i', videoPath, '-frames:v', '1', '-vf', 'scale=320:-1', '-q:v', '3', '-update', '1', outputPath]
-    const r = spawnSync(ffmpeg, args, { timeout: 20000, windowsHide: true })
-    if (r.status === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0) {
-      return outputPath
-    }
-    // 失败则清理可能残留的损坏文件
-    if (fs.existsSync(outputPath)) {
-      try { fs.unlinkSync(outputPath) } catch {}
-    }
-    return ''
-  } catch (err) {
-    console.error('generateThumbnail error:', err)
-    return ''
-  }
-}
-
 function getDefaultFolderCore(): string {
   // 壁纸库放在用户文档目录，避免 Trae 更新时替换 resources/app 导致视频丢失
   return path.join(app.getPath('documents'), 'TraeWallpaper')
@@ -816,13 +769,12 @@ function listVideosCore(folderPath: string) {
         try {
           const stat = fs.statSync(full)
           if (!stat.isFile()) return null
-          const thumb = full + '.jpg'
-          return { name: f, path: full, size: stat.size, modified: stat.mtimeMs, thumbnail: fs.existsSync(thumb) ? thumb : '' }
+          return { name: f, path: full, size: stat.size, modified: stat.mtimeMs }
         } catch {
           return null
         }
       })
-      .filter((x): x is { name: string; path: string; size: number; modified: number; thumbnail: string } => x !== null)
+      .filter((x): x is { name: string; path: string; size: number; modified: number } => x !== null)
       .sort((a, b) => b.modified - a.modified)
   } catch (err) {
     return []
@@ -844,8 +796,7 @@ function uploadVideoCore(buf: Buffer, name: string) {
     }
     fs.writeFileSync(destPath, buf)
     const stat = fs.statSync(destPath)
-    const thumbnail = generateThumbnail(destPath)
-    return { name: path.basename(destPath), path: destPath, size: stat.size, modified: stat.mtimeMs, thumbnail }
+    return { name: path.basename(destPath), path: destPath, size: stat.size, modified: stat.mtimeMs }
   } catch (err) {
     console.error('uploadVideoCore error:', err)
     return null
