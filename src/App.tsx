@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   FolderOpen,
-  FileVideo,
   Play,
   Pause,
   ImageIcon,
@@ -19,7 +18,6 @@ interface VideoItem {
   path: string
   size: number
   modified: number
-  thumbnail: string
 }
 
 function App() {
@@ -78,11 +76,7 @@ function App() {
 
   const loadVideosFromFolder = async (folder: string) => {
     if (!folder || !window.electronAPI) return
-    let items = await window.electronAPI.getVideosFromFolder(folder)
-    // 发现缺失封面的视频时，批量生成封面后刷新
-    if (items.some(v => !v.thumbnail)) {
-      items = await window.electronAPI.generateThumbnails(folder)
-    }
+    const items = await window.electronAPI.getVideosFromFolder(folder)
     setVideos(items)
     if (selectedVideo) {
       const stillExists = items.some(v => v.path === selectedVideo.path)
@@ -215,11 +209,6 @@ function App() {
     return `file:///${encodeURI(normalized)}`
   }
 
-  const getThumbnailSrc = (video: VideoItem) => {
-    const normalized = video.thumbnail.replace(/\\/g, '/')
-    return `file:///${encodeURI(normalized)}`
-  }
-
   return (
     <div
       className="app"
@@ -262,11 +251,13 @@ function App() {
                   onClick={() => setSelectedVideo(video)}
                 >
                   <div className="video-thumbnail">
-                    {video.thumbnail ? (
-                      <img src={getThumbnailSrc(video)} alt={video.name} draggable={false} />
-                    ) : (
-                      <FileVideo />
-                    )}
+                    <video
+                      src={`${getPreviewSrc(video)}#t=1`}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      draggable={false}
+                    />
                   </div>
                   <div className="video-info">
                     <div className="video-name">{video.name}</div>
